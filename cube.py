@@ -263,7 +263,6 @@ def h2(scrambled: np.ndarray, goal: np.ndarray):
     cost = 0
     for idx, val in enumerate(scrambled):
         cost += abs(idx - indexCounter[val][0])
-        print(abs(idx - indexCounter[val][0]))
         indexCounter[val] = indexCounter[val][1:]
     return cost
 
@@ -287,7 +286,6 @@ def initNode(parent=None, state=None):
     }
 
 
-# Funcție ce alege o acțiune dintr-un nod
 def selectAction(node, c):
     N_node = node[N]
     maxVal = 0
@@ -449,32 +447,32 @@ case3 = "F U U F' U' R R F' R"
 case4 = "U' R U' F' R F F U' F U U"
 caseList = [case1, case2, case3, case4]
 goalCube = Cube(scrambled=False)
-testCube = Cube(moves=case1, scrambled=False)
-print(testCube.state)
-print(goalCube.state)
-h2(testCube.state, goalCube.state)
+testCube = Cube(moves=[0], scrambled=False)
+# print(testCube.state)
+# print(goalCube.state)
+# print(h2(testCube.state, goalCube.state))
 # test all cases
-# for case in caseList:
-#     tempCube = Cube(moves=case, scrambled=False)
-#     startTime = time.time()
-#     # path = astar(tempCube, goalCube, h1)
-#     # path = bidirectionalbfs(tempCube, goalCube)
-#     # fig, ax = plt.subplots(figsize=(7, 5))
-#     # for p in path:
-#     #     ax.clear()
-#     #     p.render(ax)
-#     #     plt.pause(0.5)
-#     tree = MTCS(tempCube, goalCube, BUDGET[3], CP[1], h1)
-#     path = solvedMTCS(tree, goalCube.state)
-#     if path:
-#         path.reverse()
-#         for p in path:
-#             print(p)
-#     else:
-#         print("No path found")
-#     stopTime = time.time()
-#     elapsedTime = stopTime - startTime
-#     print(f"case {case} took {elapsedTime}s")
+for case in caseList:
+    tempCube = Cube(moves=case, scrambled=False)
+    startTime = time.time()
+    # path = astar(tempCube, goalCube, h2)
+    path = bidirectionalbfs(tempCube, goalCube)
+    fig, ax = plt.subplots(figsize=(7, 5))
+    for p in path:
+        ax.clear()
+        p.render(ax)
+        plt.pause(0.5)
+    # tree = MTCS(tempCube, goalCube, BUDGET[3], CP[1], h1)
+    # path = solvedMTCS(tree, goalCube.state)
+    # if path:
+    #     path.reverse()
+    #     for p in path:
+    #         print(p)
+    # else:
+    #     print("No path found")
+    stopTime = time.time()
+    elapsedTime = stopTime - startTime
+    print(f"case {case} took {elapsedTime}s")
 
 
 # test 1 case

@@ -259,7 +259,14 @@ def applyAllMoves(scramble: Cube()):
 
 
 def initNode(parent=None, state=None):
-    return {N: 0, Q: 0, EXPLORED: [], STATE: state, PARENT: parent, ACTIONS: {}}
+    return {
+        N: 0,
+        Q: 0,
+        EXPLORED: [],
+        STATE: state,
+        PARENT: parent,
+        ACTIONS: {},
+    }
 
 
 # Funcție ce alege o acțiune dintr-un nod
@@ -278,14 +285,19 @@ def selectAction(node, c):
 
 def solvedStates(tree, goal: np.ndarray):
     node = tree
-
-    while not np.all(np.equal(node[STATE], goal)) and not all(
-        explored in tree[EXPLORED] for explored in list(tree[ACTIONS])
-    ):
+    while not np.all(np.equal(node[STATE], goal)):
         actionList = list(node[ACTIONS])
-        if actionList:
-            tempMin = 999
-            bestAction = 0
+        if (
+            all(explored in tree[EXPLORED] for explored in list(tree[ACTIONS]))
+            and all(explored in node[EXPLORED] for explored in actionList)
+            and node[PARENT] == tree
+        ):
+            return None
+        if actionList and not all(
+            explored in node[EXPLORED] for explored in actionList
+        ):
+            tempMin = float("inf")
+            bestAction = None
             for action in actionList:
                 if node[ACTIONS][action][Q] < tempMin and action not in node[EXPLORED]:
                     tempMin = node[ACTIONS][action][Q]
@@ -295,38 +307,11 @@ def solvedStates(tree, goal: np.ndarray):
         else:
             node = node[PARENT]
 
-        # if bestAction in node[ACTIONS][bestAction]:
-        #     node = node[ACTIONS][bestAction]
-
-    return node
-
-
-# def solvedStates(tree, goal: np.ndarray):
-#     frontier = []
-#     heappush(frontier, (tree[Q], tree))
-#     node = tree
-#     discovered = {tuple(node[STATE]): (None, node[Q])}
-#     while frontier:
-#         currNode = heappop(frontier)
-#         currNode = currNode[1]
-#         if np.all(np.equal(currNode[STATE], goal)):
-#             break
-#         actionList = list(node[ACTIONS])
-#         for action in actionList:
-#             tempCost = discovered[tuple(currNode[STATE])][1] + 1
-#             if tuple(currNode[ACTIONS][action][STATE]) not in discovered:
-#                 discovered[tuple(currNode[ACTIONS][action][STATE])] = (
-#                     currNode,
-#                     tempCost,
-#                 )
-#                 heappush(
-#                     frontier,
-#                     (
-#                         tempCost + currNode[ACTIONS][action][Q],
-#                         currNode[ACTIONS][action],
-#                     ),
-#                 )
-#         break
+    path = []
+    while node[PARENT]:
+        path.append(node[STATE])
+        node = node[PARENT]
+    return path
 
 
 def astar(scrambled: Cube(), goal: Cube(), h):
@@ -448,27 +433,29 @@ caseList = [case1, case2, case3, case4]
 goalCube = Cube(scrambled=False)
 testCube = Cube(moves=[0], scrambled=False)
 # test all cases
-# for case in caseList:
-#     tempCube = Cube(moves=case, scrambled=False)
-#     startTime = time.time()
-#     # path = astar(tempCube, goalCube, h1)
-#     # path = bidirectionalbfs(tempCube, goalCube)
-#     # fig, ax = plt.subplots(figsize=(7, 5))
-#     # for p in path:
-#     #     ax.clear()
-#     #     p.render(ax)
-#     #     plt.pause(0.5)
-#     (action, tree) = mtcs(tempCube, goalCube, 10, CP[1], h1)
-#     print(action)
-#     if tree:
-#         print_tree(tree[PARENT])
-#     stopTime = time.time()
-#     elapsedTime = stopTime - startTime
-#     print(f"case {case} took {elapsedTime}s")
+for case in caseList:
+    tempCube = Cube(moves=case, scrambled=False)
+    startTime = time.time()
+    path = astar(tempCube, goalCube, h1)
+    # path = bidirectionalbfs(tempCube, goalCube)
+    # fig, ax = plt.subplots(figsize=(7, 5))
+    # for p in path:
+    #     ax.clear()
+    #     p.render(ax)
+    #     plt.pause(0.5)
+    # tree = mtcs(tempCube, goalCube, BUDGET[3], CP[1], h1)
+    # path = solvedStates(tree, goalCube.state)
+    # if path:
+    #     print(path)
+    # else:
+    #     print("No path found")
+    stopTime = time.time()
+    elapsedTime = stopTime - startTime
+    print(f"case {case} took {elapsedTime}s")
 
 # test 1 case
-tempCube = Cube(moves=case1, scrambled=False)
-startTime = time.time()
+# tempCube = Cube(moves=case1, scrambled=False)
+# startTime = time.time()
 # path = astar(tempCube, goalCube, h1)
 # path = bidirectionalbfs(tempCube, goalCube)
 # fig, ax = plt.subplots(figsize=(7, 5))
@@ -476,9 +463,13 @@ startTime = time.time()
 #     ax.clear()
 #     p.render(ax)
 #     plt.pause(0.5)
-tree = mtcs(tempCube, goalCube, 10, CP[1], h1)
-path = solvedStates(tree, goalCube.state)
+# tree = mtcs(tempCube, goalCube, BUDGET[3], CP[1], h1)
+# path = solvedStates(tree, goalCube.state)
+# if path:
+#     print(path)
+# else:
+#     print("No path found")
 # print(path)
-stopTime = time.time()
-elapsedTime = stopTime - startTime
-print(f"case {case1} took {elapsedTime}s")
+# stopTime = time.time()
+# elapsedTime = stopTime - startTime
+# print(f"case {case1} took {elapsedTime}s")

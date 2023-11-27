@@ -436,19 +436,19 @@ testCube = Cube(moves=[0], scrambled=False)
 for case in caseList:
     tempCube = Cube(moves=case, scrambled=False)
     startTime = time.time()
-    path = astar(tempCube, goalCube, h1)
+    # path = astar(tempCube, goalCube, h1)
     # path = bidirectionalbfs(tempCube, goalCube)
     # fig, ax = plt.subplots(figsize=(7, 5))
     # for p in path:
     #     ax.clear()
     #     p.render(ax)
     #     plt.pause(0.5)
-    # tree = mtcs(tempCube, goalCube, BUDGET[3], CP[1], h1)
-    # path = solvedStates(tree, goalCube.state)
-    # if path:
-    #     print(path)
-    # else:
-    #     print("No path found")
+    tree = mtcs(tempCube, goalCube, BUDGET[3], CP[1], h1)
+    path = solvedStates(tree, goalCube.state)
+    if path:
+        print(path)
+    else:
+        print("No path found")
     stopTime = time.time()
     elapsedTime = stopTime - startTime
     print(f"case {case} took {elapsedTime}s")

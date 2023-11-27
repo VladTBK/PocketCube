@@ -25,6 +25,8 @@ BUDGET = [1000, 5000, 10000, 20000]
 GODSNUMBER = 14
 CP = [0.5, 1.0]
 DISTANCE = 10
+RUNS = 20
+
 dbList = []
 for i in range(DISTANCE + 1):
     dbList.append(f"patternDB_{i}.txt")
@@ -272,7 +274,7 @@ def h2(scrambled: np.ndarray, goal: np.ndarray):
     return cost
 
 
-def h3(scrambled: np.ndarray, goal: np.ndarry, db, h):
+def h3(scrambled: np.ndarray, goal: np.ndarry, db=dbList[7], h=h1):
     currDB = None
     cost = 0
     with open(db) as file:
@@ -465,7 +467,13 @@ def generateDatabase(goal: Cube(), layers):
     database = {tuple(goal.state): layer}
     if layers >= DISTANCE:
         while queue:
-                   
+            for _ in range(6 ** layer):
+                currNode = queue.popleft()
+                currNodeList = applyAllMoves(currNode)
+                for node in currNodeList:
+                    if tuple(node.state) not in database:
+                        database[tuple(node.state)] = layer + 1
+                        queue.append(node)
     else:
         while layer < layers:
             for _ in range(6 ** layer):
@@ -509,38 +517,47 @@ case4 = "U' R U' F' R F F U' F U U"
 caseList = [case1, case2, case3, case4]
 goalCube = Cube(scrambled=False)
 testCube = Cube(moves=case1, scrambled=False)
-cost = h3(testCube.state, goalCube.state, dbList[7], h1)
+# cost = h3(testCube.state, goalCube.state, dbList[4], h1)
 # print(cost)
-createDatabase()
-# print(database)
-# print(testCube.state)
-# print(goalCube.state)
-# print(h2(testCube.state, goalCube.state))
+# createDatabase()
 # test all cases
-# budget = randint(0, 3)
-# cp = randint(0, 1)
-# print(f"Using budget={BUDGET[budget]} and CP={CP[cp]}")
-# for case in caseList:
-#     tempCube = Cube(moves=case, scrambled=False)
-#     startTime = time.time()
-#     # path = astar(tempCube, goalCube, h2)
-#     # path = bidirectionalbfs(tempCube, goalCube)
-#     # fig, ax = plt.subplots(figsize=(7, 5))
-#     # for p in path:
-#     #     ax.clear()
-#     #     p.render(ax)
-#     #     plt.pause(0.5)
-#     tree = MTCS(tempCube, goalCube, BUDGET[3], CP[1], h2)
-#     path = solvedMTCS(tree, goalCube.state)
-#     if path:
-#         path.reverse()
-#         for p in path:
-#             print(p)
-#     else:
-#         print("No path found")
-#     stopTime = time.time()
-#     elapsedTime = stopTime - startTime
-#     print(f"case {case} took {elapsedTime}s")
+for case in caseList:
+    tempCube = Cube(moves=case, scrambled=False)
+    startTime = time.time()
+    # path = astar(tempCube, goalCube, h1)
+    path = bidirectionalbfs(tempCube, goalCube)
+    stopTime = time.time()
+    print(len(path))
+    fig, ax = plt.subplots(figsize=(7, 5))
+    for p in path:
+        ax.clear()
+        p.render(ax)
+        plt.pause(0.5)
+    # for run in range(RUNS):
+    #     for budget in range(len(BUDGET)):
+    #         for cp in range(len(CP)):
+    #             startTime = time.time()
+    #             tree = MTCS(tempCube, goalCube, BUDGET[budget], CP[cp], h2)
+    #             path = solvedMTCS(tree, goalCube.state)
+    #             if path:
+    #                 print(
+    #                     f"Path found for run {run} using budget={BUDGET[budget]} and cp={CP[cp]} \n"
+    #                 )
+    #                 path.reverse()
+    #                 for p in path:
+    #                     print(tuple(p))
+    #             else:
+    #                 print(
+    #                     f"No path found for run {run} using budget={BUDGET[budget]} and cp={CP[cp]}"
+    #                 )
+    #             stopTime = time.time()
+    #             elapsedTime = stopTime - startTime
+    #             formatedTime = "{:.5f}".format(elapsedTime)
+    #             print(f"case {case} took {formatedTime}s \n")
+    #             stopTime = time.time()
+    elapsedTime = stopTime - startTime
+    formatedTime = "{:.5f}".format(elapsedTime)
+    print(f"case {case} took {formatedTime}s")
 
 
 # test 1 case
@@ -590,7 +607,9 @@ createDatabase()
 # path = solvedMTCS(tree, goalCube.state)
 # if path:
 #     path.reverse()
+#     pathList = []
 #     for p in path:
-#         print(p)
+#         pathList.append(tuple(p))
+#     print(pathList)
 # else:
 #     print("No path found")

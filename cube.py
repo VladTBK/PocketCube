@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from heapq import heappop, heappush
 import time
+import json
 from collections import deque
 from math import sqrt, log
 from random import choice, randint
@@ -23,6 +24,10 @@ EXPLORED = "explored"
 BUDGET = [1000, 5000, 10000, 20000]
 GODSNUMBER = 14
 CP = [0.5, 1.0]
+DISTANCE = 10
+dbList = []
+for i in range(DISTANCE + 1):
+    dbList.append(f"patternDB_{i}.txt")
 
 
 class Cube:
@@ -267,6 +272,19 @@ def h2(scrambled: np.ndarray, goal: np.ndarray):
     return cost
 
 
+def h3(scrambled: np.ndarray, goal: np.ndarry, db, h):
+    currDB = None
+    cost = 0
+    with open(db) as file:
+        currDB = file.read()
+    currDB = eval(currDB)
+    if tuple(scrambled) in currDB:
+        cost = currDB[tuple(scrambled)]
+    else:
+        cost = h(scrambled, goal)
+    return cost
+
+
 def applyAllMoves(scramble: Cube()):
     cubeList = []
     for i in range(6):
@@ -441,38 +459,86 @@ def MTCS(scrambled: Cube(), goal: Cube(), budget, cp, h):
     return tree
 
 
+def generateDatabase(goal: Cube(), layers):
+    layer = 0
+    queue = deque([goal])
+    database = {tuple(goal.state): layer}
+    while layer < layers:
+        for _ in range(6 ** layer):
+            currNode = queue.popleft()
+            if queue.count() == 0:
+                return
+            currNodeList = applyAllMoves(currNode)
+            for node in currNodeList:
+                if tuple(node.state) not in database:
+                    database[tuple(node.state)] = layer + 1
+                    queue.append(node)
+        layer += 1
+    return database
+
+
+# DB creation
+def createDatabase():
+    # Note: For a distance >= 10 will result over 6^10 states > 3.7 * 10^6
+    for i in range(DISTANCE + 1 - 3):
+        countLayerKeys = 0
+        countKeys = 0
+        startTime = time.time()
+        database = generateDatabase(goalCube, i)
+        stopTime = time.time()
+        filename = f"patternDB_{i}.txt"
+        with open(filename, "w") as file:
+            file.write(str(database) + "\n")
+        for key in database:
+            countKeys += 1
+            if database[key] == i:
+                countLayerKeys += 1
+
+        print(f"Distance={i} has {countKeys} unique states")
+        print(f"Layer {i} states={countLayerKeys}")
+        elapsedTime = stopTime - startTime
+        print(f"Distance {i} took {elapsedTime}s \n")
+
+
 case1 = "R U' R' F' U"
 case2 = "F' R U R U F' U'"
 case3 = "F U U F' U' R R F' R"
 case4 = "U' R U' F' R F F U' F U U"
 caseList = [case1, case2, case3, case4]
 goalCube = Cube(scrambled=False)
-testCube = Cube(moves=[0], scrambled=False)
+testCube = Cube(moves=case1, scrambled=False)
+cost = h3(testCube.state, goalCube.state, dbList[7], h1)
+# print(cost)
+createDatabase()
+# print(database)
 # print(testCube.state)
 # print(goalCube.state)
 # print(h2(testCube.state, goalCube.state))
 # test all cases
-for case in caseList:
-    tempCube = Cube(moves=case, scrambled=False)
-    startTime = time.time()
-    # path = astar(tempCube, goalCube, h2)
-    path = bidirectionalbfs(tempCube, goalCube)
-    fig, ax = plt.subplots(figsize=(7, 5))
-    for p in path:
-        ax.clear()
-        p.render(ax)
-        plt.pause(0.5)
-    # tree = MTCS(tempCube, goalCube, BUDGET[3], CP[1], h1)
-    # path = solvedMTCS(tree, goalCube.state)
-    # if path:
-    #     path.reverse()
-    #     for p in path:
-    #         print(p)
-    # else:
-    #     print("No path found")
-    stopTime = time.time()
-    elapsedTime = stopTime - startTime
-    print(f"case {case} took {elapsedTime}s")
+# budget = randint(0, 3)
+# cp = randint(0, 1)
+# print(f"Using budget={BUDGET[budget]} and CP={CP[cp]}")
+# for case in caseList:
+#     tempCube = Cube(moves=case, scrambled=False)
+#     startTime = time.time()
+#     # path = astar(tempCube, goalCube, h2)
+#     # path = bidirectionalbfs(tempCube, goalCube)
+#     # fig, ax = plt.subplots(figsize=(7, 5))
+#     # for p in path:
+#     #     ax.clear()
+#     #     p.render(ax)
+#     #     plt.pause(0.5)
+#     tree = MTCS(tempCube, goalCube, BUDGET[3], CP[1], h2)
+#     path = solvedMTCS(tree, goalCube.state)
+#     if path:
+#         path.reverse()
+#         for p in path:
+#             print(p)
+#     else:
+#         print("No path found")
+#     stopTime = time.time()
+#     elapsedTime = stopTime - startTime
+#     print(f"case {case} took {elapsedTime}s")
 
 
 # test 1 case

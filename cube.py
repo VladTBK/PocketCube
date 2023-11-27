@@ -463,17 +463,19 @@ def generateDatabase(goal: Cube(), layers):
     layer = 0
     queue = deque([goal])
     database = {tuple(goal.state): layer}
-    while layer < layers:
-        for _ in range(6 ** layer):
-            currNode = queue.popleft()
-            if queue.count() == 0:
-                return
-            currNodeList = applyAllMoves(currNode)
-            for node in currNodeList:
-                if tuple(node.state) not in database:
-                    database[tuple(node.state)] = layer + 1
-                    queue.append(node)
-        layer += 1
+    if layers >= DISTANCE:
+        while queue:
+                   
+    else:
+        while layer < layers:
+            for _ in range(6 ** layer):
+                currNode = queue.popleft()
+                currNodeList = applyAllMoves(currNode)
+                for node in currNodeList:
+                    if tuple(node.state) not in database:
+                        database[tuple(node.state)] = layer + 1
+                        queue.append(node)
+            layer += 1
     return database
 
 

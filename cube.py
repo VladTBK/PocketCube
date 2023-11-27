@@ -243,10 +243,28 @@ class Cube:
 
 
 # Sum collum diffrences
-def h1(scramble: np.np.ndarray, goal: np.np.ndarray):
+def h1(scramble: np.ndarray, goal: np.ndarray):
     cost = 0
     for idx, val in enumerate(scramble):
         cost += abs(val - goal[idx])
+    return cost
+
+
+# Sum of steps of each element
+def h2(scrambled: np.ndarray, goal: np.ndarray):
+    indexCounter = {
+        0: [0, 1, 2, 3],
+        1: [4, 5, 6, 7],
+        2: [8, 9, 10, 11],
+        3: [12, 13, 14, 15],
+        4: [16, 17, 18, 19],
+        5: [20, 21, 22, 23],
+    }
+    cost = 0
+    for idx, val in enumerate(scrambled):
+        cost += abs(idx - indexCounter[val][0])
+        print(abs(idx - indexCounter[val][0]))
+        indexCounter[val] = indexCounter[val][1:]
     return cost
 
 
@@ -283,7 +301,7 @@ def selectAction(node, c):
     return maxIdx
 
 
-def solvedStates(tree, goal: np.ndarray):
+def solvedMTCS(tree, goal: np.ndarray):
     node = tree
     while not np.all(np.equal(node[STATE], goal)):
         actionList = list(node[ACTIONS])
@@ -377,7 +395,7 @@ def bidirectionalbfs(scrambled: Cube(), goal: Cube()):
     return path
 
 
-def mtcs(scrambled: Cube(), goal: Cube(), budget, cp, h):
+def MTCS(scrambled: Cube(), goal: Cube(), budget, cp, h):
     tree = initNode(state=scrambled.state)
     for _ in range(budget):
         currCube = scrambled
@@ -431,27 +449,33 @@ case3 = "F U U F' U' R R F' R"
 case4 = "U' R U' F' R F F U' F U U"
 caseList = [case1, case2, case3, case4]
 goalCube = Cube(scrambled=False)
-testCube = Cube(moves=[0], scrambled=False)
+testCube = Cube(moves=case1, scrambled=False)
+print(testCube.state)
+print(goalCube.state)
+h2(testCube.state, goalCube.state)
 # test all cases
-for case in caseList:
-    tempCube = Cube(moves=case, scrambled=False)
-    startTime = time.time()
-    # path = astar(tempCube, goalCube, h1)
-    # path = bidirectionalbfs(tempCube, goalCube)
-    # fig, ax = plt.subplots(figsize=(7, 5))
-    # for p in path:
-    #     ax.clear()
-    #     p.render(ax)
-    #     plt.pause(0.5)
-    tree = mtcs(tempCube, goalCube, BUDGET[3], CP[1], h1)
-    path = solvedStates(tree, goalCube.state)
-    if path:
-        print(path)
-    else:
-        print("No path found")
-    stopTime = time.time()
-    elapsedTime = stopTime - startTime
-    print(f"case {case} took {elapsedTime}s")
+# for case in caseList:
+#     tempCube = Cube(moves=case, scrambled=False)
+#     startTime = time.time()
+#     # path = astar(tempCube, goalCube, h1)
+#     # path = bidirectionalbfs(tempCube, goalCube)
+#     # fig, ax = plt.subplots(figsize=(7, 5))
+#     # for p in path:
+#     #     ax.clear()
+#     #     p.render(ax)
+#     #     plt.pause(0.5)
+#     tree = MTCS(tempCube, goalCube, BUDGET[3], CP[1], h1)
+#     path = solvedMTCS(tree, goalCube.state)
+#     if path:
+#         path.reverse()
+#         for p in path:
+#             print(p)
+#     else:
+#         print("No path found")
+#     stopTime = time.time()
+#     elapsedTime = stopTime - startTime
+#     print(f"case {case} took {elapsedTime}s")
+
 
 # test 1 case
 # tempCube = Cube(moves=case1, scrambled=False)
@@ -473,3 +497,34 @@ for case in caseList:
 # stopTime = time.time()
 # elapsedTime = stopTime - startTime
 # print(f"case {case1} took {elapsedTime}s")
+
+# test solvedMTCS for a random node
+# tree = initNode(state=testCube.state)
+# tree[Q] = 100
+# for action in range(6):
+#     tree[ACTIONS][action] = initNode(state=testCube.state, parent=tree)
+#     tree[ACTIONS][action][Q] = randint(1, 40)
+
+#     for child in range(3):
+#         if action != 4:
+#             tree[ACTIONS][action][ACTIONS][child] = initNode(
+#                 state=testCube.state, parent=tree[ACTIONS][action]
+#             )
+#             tree[ACTIONS][action][ACTIONS][child][Q] = randint(1, 20)
+#         elif child != 1:
+#             tree[ACTIONS][action][ACTIONS][child] = initNode(
+#                 state=testCube.state, parent=tree[ACTIONS][action]
+#             )
+#             tree[ACTIONS][action][ACTIONS][child][Q] = randint(1, 20)
+#         else:
+#             tree[ACTIONS][action][ACTIONS][child] = initNode(
+#                 state=goalCube.state, parent=tree[ACTIONS][action]
+#             )
+#             tree[ACTIONS][action][ACTIONS][child][Q] = randint(1, 20)
+# path = solvedMTCS(tree, goalCube.state)
+# if path:
+#     path.reverse()
+#     for p in path:
+#         print(p)
+# else:
+#     print("No path found")

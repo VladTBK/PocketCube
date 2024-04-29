@@ -1,16 +1,12 @@
 from __future__ import annotations
 
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from matplotlib import animation
 
-from constants import MOVES, CORNERS, COLORS, LETTERS
-from moves import Move, MoveInput, MoveSequence
+from moves import Move, MOVES
 
-import matplotlib.pyplot as plt
 import numpy as np
 from heapq import heappop, heappush
 import time
-import json
+import csv
 from collections import deque
 from math import sqrt, log
 from random import choice, randint
@@ -33,14 +29,14 @@ for i in range(DISTANCE + 1):
 
 
 class Cube:
-    def __init__(self, moves: Moves | None = None, scrambled: bool = True):
+    def __init__(self, moves=None, scrambled: bool = True):
         self.goal_state = np.repeat(np.arange(6), 4)
         self.state = np.repeat(np.arange(6), 4)
 
         if moves or scrambled:
             self.scramble(moves)
 
-    def scramble(self, moves: Moves | None = None):
+    def scramble(self, moves=None):
 
         if moves is None:
             num_of_moves = np.random.randint(5, 11)
@@ -48,13 +44,13 @@ class Cube:
 
         self.state = Cube.move_state(self.state, moves)
 
-    def move(self, move: Moves) -> Cube:
+    def move(self, move) -> Cube:
         cube = Cube()
         cube.state = Cube.move_state(self.clone_state(), move)
         return cube
 
     @staticmethod
-    def move_state(state: np.ndarray, move: Moves) -> np.ndarray:
+    def move_state(state: np.ndarray, move) -> np.ndarray:
         move = Move.parse(move)
 
         if isinstance(move, list):
@@ -73,180 +69,8 @@ class Cube:
         cube.state = self.clone_state()
         return cube
 
-    def hash(self) -> str:
-        return Cube.hash_state(self.state)
-
     def __lt__(self, other):
         pass
-
-    @staticmethod
-    def hash_state(state: np.ndarray) -> str:
-        return "".join(map(str, state))
-
-    @staticmethod
-    def _draw_corner(ax, position, colors):
-
-        vertices = (
-            np.array(
-                [
-                    [0, 0, 0],
-                    [1, 0, 0],
-                    [1, 1, 0],
-                    [0, 1, 0],
-                    [0, 0, 1],
-                    [1, 0, 1],
-                    [1, 1, 1],
-                    [0, 1, 1],
-                ]
-            )
-            + position
-        )
-
-        indices = [
-            (0, 1, 2, 3),
-            (4, 5, 6, 7),
-            (0, 1, 5, 4),
-            (2, 3, 7, 6),
-            (0, 3, 7, 4),
-            (1, 2, 6, 5),
-        ]
-
-        faces = [[vertices[idx] for idx in face] for face in indices]
-
-        ax.add_collection3d(
-            Poly3DCollection(faces, facecolors=colors, linewidths=1, edgecolors="black")
-        )
-
-    @staticmethod
-    def _draw_cube(state: np.ndarray, ax):
-
-        for corner, (state_idxs, color_idxs) in CORNERS.items():
-            colors = ["gray"] * 6
-
-            for sticker_idx, color_idx in zip(state_idxs, color_idxs):
-                colors[color_idx] = COLORS[state[sticker_idx]]
-
-            Cube._draw_corner(ax, corner, colors)
-
-    @staticmethod
-    def render_state(state, ax):
-        base_coords = np.array([(0, 1), (1, 1), (0, 0), (1, 0)])
-        offsets = np.array([[0, 0], [1, 0], [2, 0], [-1, 0], [0, 1], [0, -1]]) * 2
-
-        idx = 0
-
-        for offset in offsets:
-            for coords in base_coords:
-                rect = plt.Rectangle(
-                    coords + offset, 1, 1, edgecolor="black", linewidth=1
-                )
-                rect.set_facecolor(COLORS[state[idx]])
-                ax.add_patch(rect)
-
-                idx += 1
-
-        ax.set_xlim(-2.1, 6.1)
-        ax.set_ylim(-2.1, 4.1)
-        ax.axis("off")
-        # plt.show()
-
-    def render(self, ax):
-        Cube.render_state(self.state, ax)
-
-    def render3D(self):
-
-        fig = plt.figure(figsize=(4, 4))
-        ax = fig.add_subplot(111, projection="3d")
-
-        Cube._draw_cube(self.state, ax)
-
-        ax.axis("off")
-        ax.set_xlim([0, 2])
-        ax.set_ylim([0, 2])
-        ax.set_zlim([0, 2])
-        plt.show()
-
-    @staticmethod
-    def render3D_moves(
-        initial_state: np.ndarray, moves: MoveSequence, save: bool = False
-    ):
-        moves = Move.parse(moves)
-
-        original_state = np.copy(initial_state)
-        state = initial_state
-
-        fig = plt.figure(figsize=(4, 4), frameon=False)
-        ax = fig.add_subplot(111, projection="3d")
-
-        Cube._draw_cube(state, ax)
-
-        ax.axis("off")
-        ax.set_xlim([0, 2])
-        ax.set_ylim([0, 2])
-        ax.set_zlim([0, 2])
-
-        move_index = 0
-
-        def init():
-
-            Cube._draw_cube(state, ax)
-            return ax
-
-        def animate(i):
-            nonlocal move_index
-
-            if i == 0:  # For the initial frame, show the original state
-                state[:] = np.copy(original_state)
-                Cube._draw_cube(state, ax)
-
-            else:
-                if move_index < len(moves):  # Check if there are more moves to perform
-                    state[:] = Cube.move_state(state, moves[move_index])
-                    ax.clear()
-
-                    Cube._draw_cube(state, ax)
-                    move_index += 1
-                    ax.axis("off")
-                    ax.set_xlim([0, 2])
-                    ax.set_ylim([0, 2])
-                    ax.set_zlim([0, 2])
-                else:
-
-                    move_index = 0
-                    state[:] = np.copy(original_state)
-                    Cube._draw_cube(state, ax)
-
-        ani = animation.FuncAnimation(
-            fig,
-            animate,
-            frames=len(moves) + 2,
-            init_func=init,
-            interval=1000,
-            blit=False,
-        )
-
-        if save:
-            ani.save("rubiks_cube_animation.gif", writer="pillow", fps=1)
-
-        plt.show()
-        return ani
-
-    def render_text(self):
-        lines = [
-            [None, None, 16, 17],
-            [None, None, 18, 19],
-            [12, 13, 0, 1, 4, 5, 8, 9],
-            [14, 15, 2, 3, 6, 7, 10, 11],
-            [None, None, 20, 21],
-            [None, None, 22, 23],
-        ]
-
-        for line in lines:
-            print(
-                "".join(
-                    LETTERS[self.state[idx]] if idx is not None else " " for idx in line
-                )
-            )
 
 
 # Sum collum diffrences
@@ -321,6 +145,7 @@ def selectAction(node, c):
 
 def solvedMTCS(tree, goal: np.ndarray):
     node = tree
+    count = 0
     while not np.all(np.equal(node[STATE], goal)):
         actionList = list(node[ACTIONS])
         if (
@@ -340,6 +165,7 @@ def solvedMTCS(tree, goal: np.ndarray):
                     bestAction = action
             node[EXPLORED].append(bestAction)
             node = node[ACTIONS][bestAction]
+
         else:
             node = node[PARENT]
 
@@ -367,7 +193,7 @@ def astar(scrambled: Cube(), goal: Cube(), h):
             if tuple(cube.state) not in discovered:
                 discovered[tuple(cube.state)] = (currCube, tempCost)
                 heappush(frontier, (tempCost + h(cube.state, goal.state), cube))
-    return path
+    return path, len(discovered)
 
 
 def bidirectionalbfs(scrambled: Cube(), goal: Cube()):
@@ -376,6 +202,7 @@ def bidirectionalbfs(scrambled: Cube(), goal: Cube()):
 
     backwardQueue = deque([goal])
     backwardVisited = {tuple(goal.state): None}
+
     commonCube = None
     while not commonCube:
         # Forward BFS
@@ -410,7 +237,7 @@ def bidirectionalbfs(scrambled: Cube(), goal: Cube()):
         commonCube = backwardVisited[tuple(commonCube)].state
     path.append(goal)
 
-    return path
+    return path, len(forwardVisited) + len(backwardVisited)
 
 
 def MTCS(scrambled: Cube(), goal: Cube(), budget, cp, h):
@@ -467,7 +294,7 @@ def generateDatabase(goal: Cube(), layers):
     database = {tuple(goal.state): layer}
     if layers >= DISTANCE:
         while queue:
-            for _ in range(6 ** layer):
+            for _ in range(6**layer):
                 currNode = queue.popleft()
                 currNodeList = applyAllMoves(currNode)
                 for node in currNodeList:
@@ -476,7 +303,7 @@ def generateDatabase(goal: Cube(), layers):
                         queue.append(node)
     else:
         while layer < layers:
-            for _ in range(6 ** layer):
+            for _ in range(6**layer):
                 currNode = queue.popleft()
                 currNodeList = applyAllMoves(currNode)
                 for node in currNodeList:
@@ -521,24 +348,68 @@ testCube = Cube(moves=case1, scrambled=False)
 # print(cost)
 # createDatabase()
 # test all cases
+
+# open the file in the write mode
+f1 = open("astarvsbfs.csv", "w", newline="")
+f2 = open("astarvsbfsvsmcts.csv", "w", newline="")
+f22 = open("mcts.csv", "w", newline="")
+f3 = open("astarvsmcts.csv", "w", newline="")
+
+# create the csv writer
+writer1 = csv.writer(f1)
+writer2 = csv.writer(f2)
+writer22 = csv.writer(f22)
+writer3 = csv.writer(f3)
+
+header1 = ["Caz de test", "Timp 1", "Timp 2", "Stari 1", "Stari 2", "Cale 1", "Cale 2"]
+writer1.writerow(header1)
+
+header2 = ["Caz de test", "Timp", "Stari", "Cale"]
+writer2.writerow(header2)
+
+header22 = [
+    "Caz de test",
+    "Timp 1",
+    "Timp 2",
+    "Timp 3",
+    "Stari 1",
+    "Stari 2",
+    "Stari 3",
+    "Cale 1",
+    "Cale 2",
+    "Cale 3",
+]
+writer22.writerow(header22)
+
+header3 = ["Caz de test", "Cale 1", "Cale 2"]
+writer3.writerow(header3)
+
+
 for case in caseList:
     tempCube = Cube(moves=case, scrambled=False)
+
+    # Algoritm A*
     startTime = time.time()
-    # path = astar(tempCube, goalCube, h1)
-    path = bidirectionalbfs(tempCube, goalCube)
+    path1, states1 = astar(tempCube, goalCube, h1)
+    # path = bidirectionalbfs(tempCube, goalCube)
+    # for p in path:
+    #     print(p.state)
     stopTime = time.time()
-    print(len(path))
-    fig, ax = plt.subplots(figsize=(7, 5))
-    for p in path:
-        ax.clear()
-        p.render(ax)
-        plt.pause(0.5)
+    print(len(path1))
+    elapsedTime = stopTime - startTime
+    formatedTime = "{:.5f}".format(elapsedTime)
+    print(f"A* case {case} took {formatedTime}s")
+    print(states1)
+
+    # writer1.writerow([case, formatedTime, formatedTime2, states1, states2, len(path1), len(path2) ])
+
     # for run in range(RUNS):
     #     for budget in range(len(BUDGET)):
     #         for cp in range(len(CP)):
-    #             startTime = time.time()
+    #             startTimemcts = time.time()
     #             tree = MTCS(tempCube, goalCube, BUDGET[budget], CP[cp], h2)
     #             path = solvedMTCS(tree, goalCube.state)
+    #             print(path)
     #             if path:
     #                 print(
     #                     f"Path found for run {run} using budget={BUDGET[budget]} and cp={CP[cp]} \n"
@@ -550,14 +421,30 @@ for case in caseList:
     #                 print(
     #                     f"No path found for run {run} using budget={BUDGET[budget]} and cp={CP[cp]}"
     #                 )
-    #             stopTime = time.time()
-    #             elapsedTime = stopTime - startTime
-    #             formatedTime = "{:.5f}".format(elapsedTime)
-    #             print(f"case {case} took {formatedTime}s \n")
-    #             stopTime = time.time()
-    elapsedTime = stopTime - startTime
-    formatedTime = "{:.5f}".format(elapsedTime)
-    print(f"case {case} took {formatedTime}s")
+    #             stopTimemcts = time.time()
+    #             elapsedTimemcts = stopTimemcts - startTimemcts
+    #             formatedTimemcts = "{:.5f}".format(elapsedTimemcts)
+    #             print(f"case {case} took {formatedTimemcts}s \n")
+    #             if path is not None:
+    #                 writer2.writerow([case, formatedTimemcts, budget, len(path)])
+    #             else:
+    #                 writer2.writerow([case, formatedTimemcts, budget, 0])
+
+    # Algoritm BFS
+    # startTime2 = time.time()
+    # path2, states2 = bidirectionalbfs(tempCube, goalCube)
+    # stopTime2 = time.time()
+    # print(len(path2))
+    # elapsedTime2 = stopTime2 - startTime2
+    # formatedTime2 = "{:.5f}".format(elapsedTime2)
+    # print(f"BFS case {case} took {formatedTime2}s")
+
+    # writer2.writerow([case, states1, states2])
+    # writer3.writerow([case, len(path1), len(path2)])
+
+f1.close()
+f2.close()
+f3.close()
 
 
 # test 1 case

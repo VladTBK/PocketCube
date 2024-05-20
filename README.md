@@ -41,4 +41,3 @@ Certainly! Here are bullet points for each algorithm:
   - Weaknesses:
     - Requires significant memory overhead for storing pattern databases. That's why only 2 * 6^7 states were stored. If a state wasn't found in the database, a heuristic was used. It should be noted that for a normal Rubik's Cube, this algorithm would not be efficient. 
 
-## 🤝 Contributing
